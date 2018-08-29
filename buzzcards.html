@@ -17,58 +17,136 @@
 				<input type="submit" value="Submit" onclick="handleSubmit()"/>
 			</p>
 		</div>
-		<div id="rosterOutput">
-
+		<div id="scanningRunning">
+			<p id="scanning"></p>
+			<div id="swipeOutput">
+				<p></p>
+			</div>
 		</div>
 
-		<script>
-			var signedIn = false;
-			var roster = [];
-			var spreadsheetId = "";
-			var rosterId = "";
 
-			function createSheet() {
-			    var eventName = document.getElementById("eventName").value;
-				var spreadsheetBody = {
+		<script>
+            var spreadsheetId = "";
+            var rosterId = "";
+            var signedIn = false;
+            var readingBarcode = false;
+            var scanRead = "";
+
+            var roster = [];
+
+            var API_KEY = "AIzaSyBAVdY6W4eW-Up1t53nAKlqDp1FHiJL_VM";
+            var CLIENT_ID = "523456694441-v0mpgb9n57o11u1r87jfugo826mh8iqp.apps.googleusercontent.com";
+            var SCOPE = "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive";
+
+            function initBuzzcards() {
+                gapi.load("client:auth2", () => {
+                    gapi.client.init({
+                        "apiKey" : API_KEY,
+                        "clientId" : CLIENT_ID,
+                        "scope" : SCOPE,
+                        "discoveryDocs" : ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+					}).then(() => {
+					    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSignedIn);
+
+					    if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                            gapi.auth2.getAuthInstance().signIn();
+                        }
+
+                        updateSignedIn(gapi.auth2.getAuthInstance().isSignedIn.get());
+
+                        document.addEventListener("keypress", handleKeyPress);
+					})
+				});
+			}
+
+            function updateSignedIn(isSignedIn) {
+                signedIn = true;
+
+                if (isSignedIn) {
+                    getCookies();
+
+                    if (rosterId !== "" && rosterId) {
+                        loadRoster();
+
+                        if (spreadsheetId === "" || !spreadsheetId) {
+                            createSheet();
+                        } else {
+                            loadSwipes();
+                        }
+                    }
+                }
+            }
+
+            function createSheet() {
+                var eventName = document.getElementById("eventName").value;
+                var spreadsheetBody = {
                     "properties": {
                         "title": eventName,
                     }
-				};
-
-				var request = gapi.client.sheets.spreadsheets.create({}, spreadsheetBody);
-				request.then(function(response) {
-					console.log(response.result);
-					spreadsheetId = response.result.spreadsheetId;
+                };
+                var request = gapi.client.sheets.spreadsheets.create({}, spreadsheetBody);
+                request.then(function(response) {
+                    console.log(response.result);
+                    spreadsheetId = response.result.spreadsheetId;
                     appendToSheet(["Name", "Timestamp"]);
                     saveCookies();
-				}, function(reason) {
-					console.log("error: " + reason.result.error.message);
-				})
-			}
+                }, function(reason) {
+                    console.log("error: " + reason.result.error.message);
+                })
+            }
 
-			function handleSwipe(swipe) {
-			    var re = /[90]\d{8}/;
-			    var matches = swipe.match(re);
-			    if (matches.length === 0) {
-			        console.log("Invalid Swipe");
-				}
-				var gtid = matches[0];
-				var hash = sha256_digest(gtid);
+            function loadRoster() {
+                var params = {
+                    spreadsheetId: rosterId,
+                    ranges: "A:B",
+                    includeGridData: true,
+                };
+                var request = gapi.client.sheets.spreadsheets.get(params);
+                request.then(function(response) {
+                    // TODO: Change code below to process the `response` object:
+                    processRoster(response.result);
+                }, function(reason) {
+                    console.error('error: ' + reason.result.error.message);
+                });
+            }
 
-				foundName = null;
+            function loadSwipes() {
+                var params = {
+                    spreadsheetId: spreadsheetId,
+                    ranges: "A:A",
+                    includeGridData: true,
+                };
+                var request = gapi.client.sheets.spreadsheets.get(params);
+                request.then(function(response) {
+                    // TODO: Change code below to process the `response` object:
+                    processSwipes(response.result);
+                }, function(reason) {
+                    console.error('error: ' + reason.result.error.message);
+                });
+            }
 
-				roster.forEach((member) => {
-				    if (member.hashedGtid === hash) {
-				        foundName = member.name
-					}
-				});
+            function processRoster(spreadsheet) {
+                var data = spreadsheet.sheets[0].data[0].rowData;
+                data.forEach((row) => {
+                    if (row.values[0].formattedValue) {
+                        var member = {
+                            name: row.values[0].formattedValue,
+                            hashedGtid: row.values[1].formattedValue
+                        }
+                        roster.push(member);
+                    }
+                });
+                console.log(roster);
+            }
 
-				if (foundName) {
-					var checkinValues = [foundName, new Date().toString()];
-					appendToSheet(checkinValues);
-				} else {
-				    console.log("Not found");
-				}
+            function processSwipes(spreadsheet) {
+                var data = spreadsheet.sheets[0].data[0].rowData;
+                data.forEach((row) => {
+                    if (row.values[0].formattedValue) {
+                        showSwipe(row.values[0].formattedValue);
+                    }
+                });
+                console.log(roster);
             }
 
             function appendToSheet(row) {
@@ -81,128 +159,104 @@
                     }
                 }).then((response) => {
                     var result = response.result;
-                    console.log(`${result.updates.updatedCells} cells appended.`)
+                    console.log(`Row appended ${row}`);
                 });
-			}
+            }
 
-			function loadRoster() {
-				rosterId = document.getElementById('rosterId').value;
-
+            function loadRoster() {
                 var params = {
                     spreadsheetId: rosterId,
                     ranges: "A:B",
                     includeGridData: true,
                 };
-
                 var request = gapi.client.sheets.spreadsheets.get(params);
                 request.then(function(response) {
                     // TODO: Change code below to process the `response` object:
                     processRoster(response.result);
-                    createSheet();
                 }, function(reason) {
                     console.error('error: ' + reason.result.error.message);
                 });
+            }
+
+            function showSwipe(name) {
+                if (name === "Name" || name === "") {
+                    return;
+				}
+                var output = document.getElementById("swipeOutput");
+                var nameElement = document.createElement("p");
+                nameElement.innerHTML = name;
+
+                output.insertBefore(nameElement, output.firstChild);
 			}
 
-			function initClient() {
-				var API_KEY = "AIzaSyBAVdY6W4eW-Up1t53nAKlqDp1FHiJL_VM";
-
-				var CLIENT_ID = "523456694441-v0mpgb9n57o11u1r87jfugo826mh8iqp.apps.googleusercontent.com";
-
-				var SCOPE = "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive";
-				gapi.client.init({
-					"apiKey" : API_KEY,
-					"clientId" : CLIENT_ID,
-					"scope" : SCOPE,
-					"discoveryDocs" : ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-				}).then(function() {
-					gapi.auth2.getAuthInstance().isSignedIn.listen(updateSignInStatus);
-
-					if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
-                        gapi.auth2.getAuthInstance().signIn();
+            function handleSwipe(swipe) {
+                var re = /[90]\d{8}/;
+                var matches = swipe.match(re);
+                if (matches.length === 0) {
+                    console.log("Invalid Swipe");
+                }
+                var gtid = matches[0];
+                var hash = sha256_digest(gtid);
+                foundName = null;
+                roster.forEach((member) => {
+                    if (member.hashedGtid === hash) {
+                        foundName = member.name
                     }
+                });
+                if (foundName) {
+                    var checkinValues = [foundName, new Date().toString()];
+                    appendToSheet(checkinValues);
+                    showSwipe(foundName);
+                } else {
+                    console.log("Not found");
+                }
+            }
 
-                    updateSignInStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-				})
-			}
-
-			function handleClientLoad() {
-				gapi.load("client:auth2", initClient);
-			}
-
-			function updateSignInStatus(isSignedIn) {
-				signedIn = isSignedIn
-			}
-
-			function handleSubmit(event) {
-			    loadRoster();
-			}
-
-			function processRoster(spreadsheet) {
-			    var data = spreadsheet.sheets[0].data[0].rowData;
-				var rowData = document.getElementById("rosterOutput");
-			    data.forEach((row) => {
-			        if (row.values[0].formattedValue) {
-                        var member = {
-                            name: row.values[0].formattedValue,
-                            hashedGtid: row.values[1].formattedValue
-                        }
-                        roster.push(member);
-					}
-				});
-
-			    console.log(roster);
-			}
-
-            let scanRead = '';
-            let readingBarcode = false;
-
-            let handleKeyPress = (e) => {
+            function handleKeyPress(e) {
                 if (e.keyCode === 59) { // semicolon
                     // Start of scan
                     readingBarcode = true;
+                    document.getElementById("scanning").innerHTML = "Scanning...";
                     e.preventDefault();
                     return;
                 }
-
                 if (readingBarcode) {
                     e.preventDefault();
-
                     if (e.keyCode === 13) { // Enter
                         readingBarcode = false;
                         handleSwipe(scanRead);
                         scanRead = '';
+                        document.getElementById("scanning").innerHTML = "";
                         return;
                     }
-
                     // Append the next key to the end of the list
                     scanRead += e.key;
                 }
-            }
+			}
 
-            document.addEventListener("keypress", handleKeyPress);
+            function handleSubmit(event) {
+                rosterId = document.getElementById("rosterId").value;
+                loadRoster();
+                createSheet();
+            }
 
             function saveCookies() {
                 document.cookie = "rosterId=" + rosterId;
                 document.cookie = "spreadsheetId=" + spreadsheetId;
-			}
-
-			function getCookies() {
-				rosterId = getCookie("rosterId");
-				spreadsheetId = getCookie("spreadsheetId");
-			}
-
+            }
+            function getCookies() {
+                rosterId = getCookie("rosterId");
+                spreadsheetId = getCookie("spreadsheetId");
+            }
             function getCookie(name) {
                 var value = "; " + document.cookie;
                 var parts = value.split("; " + name + "=");
                 if (parts.length == 2) return parts.pop().split(";").shift();
             }
-
-            getCookies();
 		</script>
 		<script src="sha256.js"></script>
 		<script async defer src="https://apis.google.com/js/api.js"
-			onload="this.onload=function(){};handleClientLoad()"
+			onload="this.onload=function(){};initBuzzcards()"
 			onreadystatechange="if (this.readyState === 'complete') this.onload();">
 		</script>
 	</body>
