@@ -144,6 +144,7 @@
             }
 
             function processRoster(spreadsheet) {
+                roster = [];
                 var data = spreadsheet.sheets[0].data[0].rowData;
                 data.forEach((row) => {
                     if (row.values[0].formattedValue) {
