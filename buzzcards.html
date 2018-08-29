@@ -17,7 +17,12 @@
 				<input type="submit" value="Submit" onclick="handleSubmit()"/>
 			</p>
 		</div>
-		<div id="scanningRunning">
+		<div id="scanningRunning" style="display:none">
+			<!--<input type="submit" value="Stop Scanning" onclick="deactivateScanning()" />-->
+			<h1>Swipe your buzzcards please.</h1>
+			<p>
+				Manual GTID Entry: <input type="text" id="manualEntry" /><input type="submit" value="Submit" onclick="manualEntry();" />
+			</p>
 			<p id="scanning"></p>
 			<div id="swipeOutput">
 				<p></p>
@@ -32,6 +37,7 @@
             var readingBarcode = false;
             var scanRead = "";
 
+            var activeScanning = false;
             var roster = [];
 
             var API_KEY = "AIzaSyBAVdY6W4eW-Up1t53nAKlqDp1FHiJL_VM";
@@ -68,10 +74,9 @@
                     if (rosterId !== "" && rosterId) {
                         loadRoster();
 
-                        if (spreadsheetId === "" || !spreadsheetId) {
-                            createSheet();
-                        } else {
+                        if (spreadsheetId !== "" && spreadsheetId) {
                             loadSwipes();
+                            activateScanning();
                         }
                     }
                 }
@@ -90,6 +95,7 @@
                     spreadsheetId = response.result.spreadsheetId;
                     appendToSheet(["Name", "Timestamp"]);
                     saveCookies();
+                    activateScanning();
                 }, function(reason) {
                     console.log("error: " + reason.result.error.message);
                 })
@@ -190,10 +196,18 @@
 			}
 
             function handleSwipe(swipe) {
+                if (!activeScanning) {
+                    return;
+				}
+				if (swipe == "stop") {
+				    deactivateScanning();
+				    return;
+				}
                 var re = /[90]\d{8}/;
                 var matches = swipe.match(re);
-                if (matches.length === 0) {
-                    console.log("Invalid Swipe");
+                if (!matches || matches.length === 0) {
+                    showSwipe("Not found/Invalid Entry");
+                    return;
                 }
                 var gtid = matches[0];
                 var hash = sha256_digest(gtid);
@@ -208,7 +222,7 @@
                     appendToSheet(checkinValues);
                     showSwipe(foundName);
                 } else {
-                    console.log("Not found");
+                    showSwipe("Not found/Invalid Swipe");
                 }
             }
 
@@ -239,6 +253,28 @@
                 loadRoster();
                 createSheet();
             }
+
+            function manualEntry() {
+                var entry = document.getElementById("manualEntry").value;
+                document.getElementById("manualEntry").value = "";
+                handleSwipe(entry);
+			}
+
+            function activateScanning() {
+                activeScanning = true;
+                document.getElementById("scanningForm").style.display = "none";
+                document.getElementById("scanningRunning").style.display = "block";
+			}
+
+			function deactivateScanning() {
+                activeScanning = false;
+                document.getElementById("scanningForm").style.display = "block";
+                document.getElementById("scanningRunning").style.display = "none";
+                document.getElementById("swipeOutput").innerHTML = "<p></p>";
+                rosterId = "";
+                spreadsheetId = "";
+                saveCookies();
+			}
 
             function saveCookies() {
                 document.cookie = "rosterId=" + rosterId;
