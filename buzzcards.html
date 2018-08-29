@@ -87,7 +87,19 @@
                 var spreadsheetBody = {
                     "properties": {
                         "title": eventName,
-                    }
+                    },
+                    "sheets": [
+                        {
+                            "properties": {
+                                "title": "Attendance",
+                            }
+                        },
+						{
+                            "properties": {
+                                "title": "SWIPES",
+                            }
+                        }
+                    ],
                 };
                 var request = gapi.client.sheets.spreadsheets.create({}, spreadsheetBody);
                 request.then(function(response) {
@@ -119,7 +131,7 @@
             function loadSwipes() {
                 var params = {
                     spreadsheetId: spreadsheetId,
-                    ranges: "A:A",
+                    ranges: "SWIPES!A:A",
                     includeGridData: true,
                 };
                 var request = gapi.client.sheets.spreadsheets.get(params);
@@ -158,7 +170,7 @@
             function appendToSheet(row) {
                 gapi.client.sheets.spreadsheets.values.append({
                     spreadsheetId: spreadsheetId,
-                    range: "A:B",
+                    range: "SWIPES!A:B",
                     valueInputOption: "RAW",
                     resource: {
                         values:[row]
