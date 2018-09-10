@@ -5,7 +5,7 @@
 	<body>
 		<div id="scanningForm">
 			<p>
-				Roster ID: <input type="text" id="rosterId"/>
+				Roster ID: <button type="button" id="rosterId" onclick="pickRoster();">Select Roster</button>
 			</p>
 			<p>
 				Event Name: <input type="text" id="eventName"/>
@@ -36,6 +36,7 @@
             var signedIn = false;
             var readingBarcode = false;
             var scanRead = "";
+            var oauthToken;
 
             var activeScanning = false;
             var roster = [];
@@ -46,22 +47,24 @@
 
             function initBuzzcards() {
                 gapi.load("client:auth2", () => {
-                    gapi.client.init({
-                        "apiKey" : API_KEY,
-                        "clientId" : CLIENT_ID,
-                        "scope" : SCOPE,
-                        "discoveryDocs" : ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-					}).then(() => {
-					    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSignedIn);
+                    gapi.load("picker", () => {
+                        gapi.client.init({
+                            "apiKey" : API_KEY,
+                            "clientId" : CLIENT_ID,
+                            "scope" : SCOPE,
+                            "discoveryDocs" : ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                        }).then(() => {
+                            gapi.auth2.getAuthInstance().isSignedIn.listen(updateSignedIn);
 
-					    if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
-                            gapi.auth2.getAuthInstance().signIn();
-                        }
+                            if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                                gapi.auth2.getAuthInstance().signIn();
+                            }
 
-                        updateSignedIn(gapi.auth2.getAuthInstance().isSignedIn.get());
+                            updateSignedIn(gapi.auth2.getAuthInstance().isSignedIn.get());
 
-                        document.addEventListener("keypress", handleKeyPress);
-					})
+                            document.addEventListener("keypress", handleKeyPress);
+                        });
+					});
 				});
 			}
 
@@ -69,7 +72,10 @@
                 signedIn = true;
 
                 if (isSignedIn) {
+                    var auth = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse(true);
+                    oauthToken = auth.access_token;
                     getCookies();
+
 
                     if (rosterId !== "" && rosterId) {
                         loadRoster();
@@ -81,6 +87,22 @@
                     }
                 }
             }
+
+            function pickRoster() {
+                var picker = new google.picker.PickerBuilder().
+                addView(google.picker.ViewId.SPREADSHEETS).
+                setOAuthToken(oauthToken).
+                setDeveloperKey(API_KEY).
+                setCallback((data) => {
+                    var url = 'nothing';
+                    if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
+                        var doc = data[google.picker.Response.DOCUMENTS][0];
+                        url = doc[google.picker.Document.URL];
+                    }
+                    console.log(url);
+				}).build();
+                picker.setVisible(true);
+			}
 
             function createSheet() {
                 var eventName = document.getElementById("eventName").value;
