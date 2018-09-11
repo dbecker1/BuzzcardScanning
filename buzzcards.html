@@ -5,13 +5,10 @@
 	<body>
 		<div id="scanningForm">
 			<p>
-				Roster ID: <button type="button" id="rosterId" onclick="pickRoster();">Select Roster</button>
+				Roster Select: <button type="button" onclick="pickRoster();">Select Roster</button><span id="rosterName"></span>
 			</p>
 			<p>
-				Event Name: <input type="text" id="eventName"/>
-			</p>
-			<p>
-				Folder ID: <input type="text" id="folderId"/>
+				Attendance Sheet Select: <button type="button" onclick="pickAttendanceSheet();">Select Attendance Sheet</button><span id="attendanceName"></span>
 			</p>
 			<p>
 				<input type="submit" value="Submit" onclick="handleSubmit()"/>
@@ -23,6 +20,7 @@
 			<p>
 				Manual GTID Entry: <input type="text" id="manualEntry" /><input type="submit" value="Submit" onclick="manualEntry();" />
 			</p>
+			<div id="admin"></div>
 			<p id="scanning"></p>
 			<div id="swipeOutput">
 				<p></p>
@@ -94,45 +92,30 @@
                 setOAuthToken(oauthToken).
                 setDeveloperKey(API_KEY).
                 setCallback((data) => {
-                    var url = 'nothing';
                     if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
                         var doc = data[google.picker.Response.DOCUMENTS][0];
-                        url = doc[google.picker.Document.URL];
+                        rosterId = doc[google.picker.Document.ID];
+                        var spreadsheetName = doc[google.picker.Document.NAME];
+                        document.getElementById("rosterName").innerText = spreadsheetName;
                     }
-                    console.log(url);
 				}).build();
                 picker.setVisible(true);
 			}
 
-            function createSheet() {
-                var eventName = document.getElementById("eventName").value;
-                var spreadsheetBody = {
-                    "properties": {
-                        "title": eventName,
-                    },
-                    "sheets": [
-                        {
-                            "properties": {
-                                "title": "Attendance",
-                            }
-                        },
-						{
-                            "properties": {
-                                "title": "SWIPES",
-                            }
-                        }
-                    ],
-                };
-                var request = gapi.client.sheets.spreadsheets.create({}, spreadsheetBody);
-                request.then(function(response) {
-                    console.log(response.result);
-                    spreadsheetId = response.result.spreadsheetId;
-                    appendToSheet(["Name", "Timestamp"]);
-                    saveCookies();
-                    activateScanning();
-                }, function(reason) {
-                    console.log("error: " + reason.result.error.message);
-                })
+            function pickAttendanceSheet() {
+                var picker = new google.picker.PickerBuilder().
+                addView(google.picker.ViewId.SPREADSHEETS).
+                setOAuthToken(oauthToken).
+                setDeveloperKey(API_KEY).
+                setCallback((data) => {
+                    if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
+                        var doc = data[google.picker.Response.DOCUMENTS][0];
+                        spreadsheetId = doc[google.picker.Document.ID];
+                        var spreadsheetName = doc[google.picker.Document.NAME];
+                        document.getElementById("attendanceName").innerText = spreadsheetName;
+                    }
+                }).build();
+                picker.setVisible(true);
             }
 
             function loadRoster() {
@@ -238,6 +221,10 @@
 				    deactivateScanning();
 				    return;
 				}
+				if(swipe == "admin") {
+				    activateAdmin();
+				    return;
+				}
                 var re = /[90]\d{8}/;
                 var matches = swipe.match(re);
                 if (!matches || matches.length === 0) {
@@ -284,9 +271,10 @@
 			}
 
             function handleSubmit(event) {
-                rosterId = document.getElementById("rosterId").value;
                 loadRoster();
-                createSheet();
+                loadSwipes();
+                saveCookies();
+                activateScanning();
             }
 
             function manualEntry() {
@@ -309,6 +297,29 @@
                 rosterId = "";
                 spreadsheetId = "";
                 saveCookies();
+			}
+
+			function activateAdmin() {
+                var select = document.createElement("select");
+
+                select.addEventListener("change", adminSelect);
+
+                for (var i = 0; i < roster.length; i++) {
+                    var current = roster[i];
+                    var option = document.createElement("option");
+                    option.value = current.name;
+                    option.innerText = current.name;
+
+                    select.appendChild(option);
+				}
+				document.getElementById("admin").appendChild(select);
+			}
+
+			function adminSelect(event) {
+                var name = event.target.value;
+                var checkinValues = [name, new Date().toString()];
+                appendToSheet(checkinValues);
+                showSwipe(name);
 			}
 
             function saveCookies() {
