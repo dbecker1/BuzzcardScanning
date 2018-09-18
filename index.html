@@ -1,0 +1,139 @@
+<!DOCTYPE HTML>
+<!--
+    Buzzcard Scanning
+    Highlights by HTML5 UP
+    Daniel Becker & Cliff Panos
+-->
+<html>
+	<head>
+		<title>Attendance</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+        <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+	</head>
+	<body class="is-preload">
+
+        <!-- Custom Blurred Background -->
+        <div class="background-image"></div>
+
+		<!-- Header -->
+			<section id="header">
+				<header class="major">
+                    <div style="margin-bottom:50px">
+                        <span class="logo"><img src="images/shield.svg" alt="Delta Chi Shield"/></span>
+                    </div>
+                    <div>
+    					<h1>Chapter Attendance</h1>
+    					<p>Use a roster & and BuzzCard scanner to continue</p>
+                    </div>
+                    <div class="main special">
+                        <div style="display:block;margin-top:140px">
+                            <a href="#one" class="goto-next scrolly"></a>
+                        </div>
+                    </div>
+				</header>
+			</section>
+
+        <!-- Content Section -->
+            <section class="main special" id="one">
+                <div>
+					<br></br>
+				</div>
+                <div class="container">
+
+                <!-- Form Selection -->
+                    <div class="content" id="scanningForm">
+                        <header class="major">
+                            <h2>Roster & Attendance</h2>
+                        </header>
+
+                        <br></br>
+                        <form method="post" action="#">
+                            <div class="row gtr-uniform">
+                                <div class="col-12">
+                                    <ul class="actions special">
+                                        <li><a class="button" id="rosterButton" onclick="pickRoster();" class="button primary scrolly">Select Roster</a></li>
+                                    </ul>
+                                    <ul class="actions special">
+                                        <li><a class="button" id="attendanceButton" onclick="pickAttendanceSheet();" class="button primary">Select Attendance</a></li>
+                                    </ul>
+                                    <ul class="actions special">
+                                        <li><a class="button primary disabled" id="submitFormsButton" onclick="handleSubmit();">Use Selected Forms</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                <!-- Scanning Running -->
+                    <div class="content" id="scanningRunning" style="display:none">
+						<header class="major">
+							<h2>Member Check-In</h2>
+						</header>
+
+                        <header>
+                            <h2>Please swipe your BuzzCard</h4>
+                            <p>Swipe your BuzzCard to mark yourself as attended. If you do not see your name listed below, you have not been checked in.</p>
+                        </header>
+
+                        <div>
+                            <h5 align="left">Manual Entry</h5>
+                        </div>
+                        <form method="post" action="#">
+                            <div class="row gtr-uniform">
+                                <div class="col-6 col-12-small" style="width:75%">
+                                    <input type="text" id="manualEntry" value="" placeholder="Enter GTID Here" style="border-radius:5px"/>
+                                </div>
+                                <div>
+                                    <input type="button" id="manualEntryButton" class="button primary scrolly" onclick="submitManualEntry()" value="Submit"/>
+                                </div>
+                                <div class="col-12" style="display:none" id="admin">
+                                    <div>
+                                        <h5 align="left">Administrative Control</h5>
+                                    </div>
+                                    <select id="select" name="member" style="border-radius:5px"></select>
+                                </div>
+                            </div>
+                        </form>
+                        <hr></hr>
+
+                        <h3 id="scanning" style="font-size:25pt;font-weight:normal"></h3>
+                        <div id="swipeOutput" style="margin-top:25px"></div>
+
+                        <a href="#one" class="goto-next scrolly" style="transform:rotate(180deg)"></a>
+                    </div>
+                </div>
+            </section>
+
+		<!-- Footer -->
+			<section id="footer">
+				<footer>
+					<ul class="copyright">
+						<li>&copy; Daniel Becker & Cliff Panos</li>
+                        <li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+                        <li><a class="icon alt fa-github" style="margin-right:5px"><span class="label">Email</span></a><a href="https://github.com/dbecker1/BuzzcardScanning">GitHub</a></li>
+					</ul>
+				</footer>
+			</section>
+
+        <!-- Primary Scripts -->
+            <script src="assets/js/buzzcards.js"></script>
+            <script src="assets/js/sha256.js"></script>
+    		<script async defer src="https://apis.google.com/js/api.js"
+    			onload="this.onload=function(){};initBuzzcards()"
+    			onreadystatechange="if (this.readyState === 'complete') this.onload();">
+    		</script>
+
+		<!-- Supporting Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
