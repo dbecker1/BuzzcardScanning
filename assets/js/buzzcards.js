@@ -54,12 +54,14 @@ function updateSignedIn(isSignedIn) {
 
 
         if (rosterId !== "" && rosterId) {
-            loadRoster();
+            loadRoster().then(() => {
+                if (spreadsheetId !== "" && spreadsheetId) {
+                    loadSwipes();
+                    activateScanning();
+                }
+            });
 
-            if (spreadsheetId !== "" && spreadsheetId) {
-                loadSwipes();
-                activateScanning();
-            }
+            
         }
     }
 }
@@ -147,7 +149,8 @@ function processRoster(spreadsheet) {
         if (row.values[0].formattedValue) {
             var member = {
                 name: row.values[0].formattedValue,
-                hashedGtid: row.values[1].formattedValue
+                hashedGtid: row.values[1].formattedValue,
+                scanned: false
             }
             roster.push(member);
         }
@@ -161,6 +164,11 @@ function processSwipes(spreadsheet) {
         if (row.values[0].formattedValue) {
             showSwipe(row.values[0].formattedValue);
         }
+        roster.forEach((member) => {
+            if (member.name == row.values[0].formattedValue) {
+                member.scanned = true;
+            }
+        })
     });
     console.log(roster);
 }
@@ -180,18 +188,23 @@ function appendToSheet(row) {
 }
 
 function loadRoster() {
-    var params = {
-        spreadsheetId: rosterId,
-        ranges: "A:B",
-        includeGridData: true,
-    };
-    var request = gapi.client.sheets.spreadsheets.get(params);
-    request.then(function(response) {
-        // TODO: Change code below to process the `response` object:
-        processRoster(response.result);
-    }, function(reason) {
-        console.error('error: ' + reason.result.error.message);
-    });
+    return new Promise((resolve, reject) => {
+        var params = {
+            spreadsheetId: rosterId,
+            ranges: "A:B",
+            includeGridData: true,
+        };
+        var request = gapi.client.sheets.spreadsheets.get(params);
+        request.then(function(response) {
+            // TODO: Change code below to process the `response` object:
+            processRoster(response.result);
+            resolve();
+        }, function(reason) {
+            console.error('error: ' + reason.result.error.message);
+            reject();
+        });
+    })
+    
 }
 
 function showSwipe(name) {
@@ -227,11 +240,23 @@ function handleSwipe(swipe) {
     var gtid = matches[0];
     var hash = sha256_digest(gtid);
     foundName = null;
+    alreadySwiped = false;
     roster.forEach((member) => {
         if (member.hashedGtid === hash) {
             foundName = member.name
+            if (member.scanned) {
+                alreadySwiped = true;
+            }
         }
     });
+    if (alreadySwiped) {
+        if (foundName.includes("Vishesh")) {
+            showSwipe("Leave me alone Vishesh");
+        } else {
+            showSwipe("Already Swiped.");
+        }
+        return;
+    }
     if (foundName) {
         var checkinValues = [foundName, new Date().toString()];
         appendToSheet(checkinValues);
@@ -269,13 +294,14 @@ function handleSubmit(event) {
     }
     var buzzcardsSwipesSection = document.getElementById("scanningRunning");
     buzzcardsSwipesSection.style.display = "block";
-    loadRoster();
-    loadSwipes();
-    saveCookies();
-    activateScanning();
+    loadRoster().then(() => {
+        loadSwipes();
+        saveCookies();
+        activateScanning();
 
-    var formSelectionSection = document.getElementById("scanningForm");
-    formSelectionSection.style.display = "none";
+        var formSelectionSection = document.getElementById("scanningForm");
+        formSelectionSection.style.display = "none";
+    });
 }
 
 function submitManualEntry() {
