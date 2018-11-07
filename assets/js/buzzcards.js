@@ -116,7 +116,7 @@ function updateSubmitFormsButton() {
 function loadRoster() {
     var params = {
         spreadsheetId: rosterId,
-        ranges: "A:B",
+        ranges: "A:C",
         includeGridData: true,
     };
     var request = gapi.client.sheets.spreadsheets.get(params);
@@ -131,7 +131,7 @@ function loadRoster() {
 function loadSwipes() {
     var params = {
         spreadsheetId: spreadsheetId,
-        ranges: sectionName + "!A:A",
+        ranges: sectionName + "!B:B",
         includeGridData: true,
     };
     var request = gapi.client.sheets.spreadsheets.get(params);
@@ -151,6 +151,7 @@ function processRoster(spreadsheet) {
             var member = {
                 name: row.values[0].formattedValue,
                 hashedGtid: row.values[1].formattedValue,
+                login: row.values[2].formattedValue,
                 scanned: false
             }
             roster.push(member);
@@ -161,6 +162,8 @@ function processRoster(spreadsheet) {
 
 function processSwipes(spreadsheet) {
     var data = spreadsheet.sheets[0].data[0].rowData;
+    var sheetTitle = spreadsheet.properties.title;
+    document.getElementById("sheetParagraph").innerHTML = "Spreadsheet: " + sheetTitle;
     data.forEach((row) => {
         if (row.values[0].formattedValue) {
             showSwipe(row.values[0].formattedValue);
@@ -177,7 +180,7 @@ function processSwipes(spreadsheet) {
 function appendToSheet(row) {
     gapi.client.sheets.spreadsheets.values.append({
         spreadsheetId: spreadsheetId,
-        range: sectionName + "!A:B",
+        range: sectionName + "!B:D",
         valueInputOption: "RAW",
         resource: {
             values:[row]
@@ -192,7 +195,7 @@ function loadRoster() {
     return new Promise((resolve, reject) => {
         var params = {
             spreadsheetId: rosterId,
-            ranges: "A:B",
+            ranges: "A:C",
             includeGridData: true,
         };
         var request = gapi.client.sheets.spreadsheets.get(params);
@@ -241,10 +244,12 @@ function handleSwipe(swipe) {
     var gtid = matches[0];
     var hash = sha256_digest(gtid);
     foundName = null;
+    foundLogin = null;
     alreadySwiped = false;
     roster.forEach((member) => {
         if (member.hashedGtid === hash) {
             foundName = member.name
+            foundLogin = member.login
             if (member.scanned) {
                 alreadySwiped = true;
             }
@@ -255,7 +260,7 @@ function handleSwipe(swipe) {
         return;
     }
     if (foundName) {
-        var checkinValues = [foundName, new Date().toString()];
+        var checkinValues = ["", foundName, foundLogin, new Date().toString()];
         appendToSheet(checkinValues);
         showSwipe(foundName);
     } else {
@@ -314,6 +319,7 @@ function activateScanning() {
     activeScanning = true;
     document.getElementById("scanningForm").style.display = "none";
     document.getElementById("scanningRunning").style.display = "block";
+    document.getElementById("sectionParagraph").innerHTML = "Section: " + sectionName;
 }
 
 function deactivateScanning() {
