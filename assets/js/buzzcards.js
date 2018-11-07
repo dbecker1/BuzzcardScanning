@@ -9,6 +9,7 @@
 
 var spreadsheetId = "";
 var rosterId = "";
+var sectionName = "";
 var signedIn = false;
 var readingBarcode = false;
 var scanRead = "";
@@ -130,7 +131,7 @@ function loadRoster() {
 function loadSwipes() {
     var params = {
         spreadsheetId: spreadsheetId,
-        ranges: "SWIPES!A:A",
+        ranges: sectionName + "!A:A",
         includeGridData: true,
     };
     var request = gapi.client.sheets.spreadsheets.get(params);
@@ -176,7 +177,7 @@ function processSwipes(spreadsheet) {
 function appendToSheet(row) {
     gapi.client.sheets.spreadsheets.values.append({
         spreadsheetId: spreadsheetId,
-        range: "SWIPES!A:B",
+        range: sectionName + "!A:B",
         valueInputOption: "RAW",
         resource: {
             values:[row]
@@ -250,11 +251,7 @@ function handleSwipe(swipe) {
         }
     });
     if (alreadySwiped) {
-        if (foundName.includes("Vishesh")) {
-            showSwipe("Leave me alone Vishesh");
-        } else {
-            showSwipe("Already Swiped.");
-        }
+        showSwipe("Already Swiped.");
         return;
     }
     if (foundName) {
@@ -292,6 +289,8 @@ function handleSubmit(event) {
     if (!(rosterId && spreadsheetId)) {
         return;
     }
+    var sectionSelect = document.getElementById("sectionSelect")
+    sectionName = sectionSelect.value;
     var buzzcardsSwipesSection = document.getElementById("scanningRunning");
     buzzcardsSwipesSection.style.display = "block";
     loadRoster().then(() => {
@@ -358,13 +357,21 @@ function adminSelect(event) {
 function saveCookies() {
     document.cookie = "rosterId=" + rosterId;
     document.cookie = "spreadsheetId=" + spreadsheetId;
+    document.cookie = "sectionName=" + sectionName;
 }
 function getCookies() {
     rosterId = getCookie("rosterId");
     spreadsheetId = getCookie("spreadsheetId");
+    sectionName = getCookie("sectionName");
 }
 function getCookie(name) {
     var value = "; " + document.cookie;
     var parts = value.split("; " + name + "=");
     if (parts.length == 2) return parts.pop().split(";").shift();
 }
+
+function submitted(event) {
+    event.preventDefault();
+    submitManualEntry();
+}
+

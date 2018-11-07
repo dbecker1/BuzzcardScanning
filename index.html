@@ -21,11 +21,8 @@
 		<!-- Header -->
 			<section id="header">
 				<header class="major">
-                    <div style="margin-bottom:50px">
-                        <span class="logo"><img src="images/shield.svg" alt="Delta Chi Shield"/></span>
-                    </div>
                     <div>
-    					<h1>Chapter Attendance</h1>
+    					<h1>Recitation Attendance</h1>
     					<p>Use a roster & and BuzzCard scanner to continue</p>
                     </div>
                     <div class="main special">
@@ -60,6 +57,23 @@
                                         <li><a class="button" id="attendanceButton" onclick="pickAttendanceSheet();" class="button primary">Select Attendance</a></li>
                                     </ul>
                                     <ul class="actions special">
+                                        <li>
+                                            <div>
+                                                <h5>Select Section</h5>
+                                            </div>
+                                            <select name="section" id="sectionSelect" style="border-radius:5px">
+                                                <option value="Default">Select Section</option>
+                                                <option value="CULC144@3pm">CULC144@3pm</option>
+                                                <option value="CULC144@4.30pm">CULC144@4.30pm</option>
+                                                <option value="Klaus1456@4.30pm">Klaus1456@4.30pm</option>
+                                                <option value="Klaus1443@6pm">Klaus1443@6pm</option>
+                                                <option value="Klaus1456@6pm">Klaus1456@6pm</option>
+                                                <option value="Klaus2443@6pm">Klaus2443@6pm</option>
+                                                <option value="Klaus2447@6pm">Klaus2447@6pm</option>
+                                            </select>
+                                        </li>
+                                    </ul>
+                                    <ul class="actions special">
                                         <li><a class="button primary disabled" id="submitFormsButton" onclick="handleSubmit();">Use Selected Forms</a></li>
                                     </ul>
                                 </div>
@@ -70,7 +84,7 @@
                 <!-- Scanning Running -->
                     <div class="content" id="scanningRunning" style="display:none">
 						<header class="major">
-							<h2>Member Check-In</h2>
+							<h2>Student Check-In</h2>
 						</header>
 
                         <header>
@@ -79,24 +93,26 @@
                         </header>
 
                         <div>
+                            <input type="button" id="stopScanningButton" class="button primary scrolly" onclick="deactivateScanning()" value="Stop Scanning"/>
+                        </div>
+
+                        <div>
                             <h5 align="left">Manual Entry</h5>
                         </div>
-                        <form method="post" action="#">
-                            <div class="row gtr-uniform">
-                                <div class="col-6 col-12-small" style="width:75%">
-                                    <input type="text" id="manualEntry" value="" placeholder="Enter GTID Here" style="border-radius:5px"/>
-                                </div>
-                                <div>
-                                    <input type="button" id="manualEntryButton" class="button primary scrolly" onclick="submitManualEntry()" value="Submit"/>
-                                </div>
-                                <div class="col-12" style="display:none" id="admin">
-                                    <div>
-                                        <h5 align="left">Administrative Control</h5>
-                                    </div>
-                                    <select id="select" name="member" style="border-radius:5px"></select>
-                                </div>
+                        <div class="row gtr-uniform">
+                            <div class="col-6 col-12-small" style="width:75%">
+                                <input type="text" id="manualEntry" value="" placeholder="Enter GTID Here" style="border-radius:5px"/>
                             </div>
-                        </form>
+                            <div>
+                                <input type="button" id="manualEntryButton" class="button primary scrolly" onclick="submitManualEntry()" value="Submit"/>
+                            </div>
+                            <div class="col-12" style="display:none" id="admin">
+                                <div>
+                                    <h5 align="left">Administrative Control</h5>
+                                </div>
+                                <select id="select" name="member" style="border-radius:5px"></select>
+                            </div>
+                        </div>
                         <hr></hr>
 
                         <h3 id="scanning" style="font-size:25pt;font-weight:normal"></h3>
